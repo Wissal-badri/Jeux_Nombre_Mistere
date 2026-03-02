@@ -16,15 +16,15 @@ namespace JeuxNombreM
         }
 
         // Demande à l'utilisateur d'entrer un nombre et le retourne sous forme d'entier (avec validation des bornes)
-        private int GetUserGuess(int min, int max)
+        private int GetUserGuess(int min, int max, string prefixMessage = "")
         {
-            Console.Write($"Veuillez entrer un nombre entre {min} et {max} : ");
+            Console.Write($"{prefixMessage}Veuillez entrer un nombre entre {min} et {max} : ");
             int guess;
-            // Boucle de validation pour s'assurer que l'utilisateur saisit un nombre entier valide
+            // Boucle de validation pour s'assurer que l'utilisateur saisit un nombre entier valide et dans le bon intervalle
             while (!int.TryParse(Console.ReadLine(), out guess) || guess < min || guess > max)
             {
                 Console.WriteLine($"Entrée invalide. Le nombre doit être compris entre {min} et {max}.");
-                Console.Write($"Veuillez entrer un nombre entre {min} et {max} : ");
+                Console.Write($"{prefixMessage}Veuillez entrer un nombre entre {min} et {max} : ");
             }
             return guess;
         }
@@ -47,43 +47,90 @@ namespace JeuxNombreM
                 Console.WriteLine("C'est plus petit !");
             }
 
-            // Calcul de l'intervalle pour donner un indice
-            int borneInf = target - 5;
-            int borneSup = target + 5;
-            Console.WriteLine($"Vous êtes proche ! Il est entre {borneInf} et {borneSup}.");
-
             return false;
         }
 
         // Exécute la logique principale du jeu
         internal void Start()
         {
-            // Définition des bornes
-            int min = 1;
-            int max = 100;
+            Console.WriteLine("Choisissez le mode de jeu :");
+            Console.WriteLine("1 - Mode Solo (1 joueur, 3 tentatives)");
+            Console.WriteLine("2 - Mode Duel (2 joueurs, tour par tour, 3 tentatives par joueur)");
+            Console.Write("Votre choix (1 ou 2) : ");
+            
+            string modeChoice = Console.ReadLine();
+            bool isDualMode = (modeChoice == "2");
+
+            // Définition des bornes globales du jeu
+            int minGlobal = 1;
+            int maxGlobal = 100;
             
             // Génération du nombre cible
-            int target = GenerateRandomNumber(min, max);
+            int target = GenerateRandomNumber(minGlobal, maxGlobal);
             bool found = false;
             
-            // Gestion du nombre de tentatives
-            int maxAttempts = 3;
+            // Gestion du nombre de tentatives (3 en mode solo, 6 au total en duel => 3 par joueur)
+            int maxAttempts = isDualMode ? 6 : 3;
             int attempts = 0;
+
+            // Intervalle courant (évolue au fil des tentatives)
+            int currentMin = minGlobal;
+            int currentMax = maxGlobal;
+
+            int currentPlayer = 1;
 
             // Boucle jusqu'à ce que l'utilisateur trouve le nombre cible ou n'a plus de tentatives
             while (!found && attempts < maxAttempts)
             {
-                Console.WriteLine($"--- Tentative {attempts + 1} sur {maxAttempts} ---");
-                int guess = GetUserGuess(min, max);
+                string playerPrefix = isDualMode ? $"[Joueur {currentPlayer}] " : "";
+                
+                int tentativeJoueur = isDualMode ? (attempts / 2) + 1 : attempts + 1;
+                Console.WriteLine($"\n--- {playerPrefix}Tentative {tentativeJoueur} sur 3 ---");
+                
+                // On demande le nombre en utilisant l'intervalle mis à jour
+                int guess = GetUserGuess(currentMin, currentMax, playerPrefix);
                 attempts++;
                 
                 found = CheckGuess(guess, target);
+
+                if (found)
+                {
+                    if (isDualMode)
+                    {
+                        Console.WriteLine($"Félicitations au Joueur {currentPlayer}, tu as gagné !");
+                    }
+                    break;
+                }
+
+                // Si le joueur n'a pas trouvé et qu'il reste des tentatives pour quelqu'un, on donne l'indice
+                if (!found && attempts < maxAttempts)
+                {
+                    // Calcul du nouvel intervalle pour réduire la plage
+                    int borneInf = target - 5;
+                    int borneSup = target + 5;
+
+                    // On s'assure que le nouvel intervalle ne sort pas des bornes globales 1..100
+                    if (borneInf < minGlobal) borneInf = minGlobal;
+                    if (borneSup > maxGlobal) borneSup = maxGlobal;
+
+                    // Mise à jour de l'intervalle pour la prochaine proposition
+                    currentMin = borneInf;
+                    currentMax = borneSup;
+
+                    Console.WriteLine($"L'indice : Il est entre {currentMin} et {currentMax}.");
+
+                    // Changement de joueur si on est en mode duel
+                    if (isDualMode)
+                    {
+                        currentPlayer = (currentPlayer == 1) ? 2 : 1;
+                    }
+                }
             }
 
-            // Si le joueur n'a pas trouvé après ses 3 tentatives
+            // Si le nombre n'a pas été trouvé après l'épuisement des tentatives
             if (!found)
             {
-                Console.WriteLine($"\nDommage ! Vous avez épuisé vos {maxAttempts} tentatives.");
+                Console.WriteLine($"\nDommage ! Les tentatives sont épuisées.");
                 Console.WriteLine($"Le nombre mystère était : {target}");
             }
 
