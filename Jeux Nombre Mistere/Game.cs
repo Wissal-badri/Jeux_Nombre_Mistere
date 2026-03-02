@@ -13,16 +13,16 @@ namespace JeuxNombreM
         {
             return random.Next(min, max + 1);
         }
-        // Demande à l'utilisateur d'entrer un nombre et le retourne sous forme d'entier
-        private int GetUserGuess()
+        // Demande à l'utilisateur d'entrer un nombre et le retourne sous forme d'entier (avec validation des bornes)
+        private int GetUserGuess(int min, int max)
         {
-            Console.Write("Veuillez entrer un nombre : ");
+            Console.Write($"Veuillez entrer un nombre entre {min} et {max} : ");
             int guess;
             // Boucle de validation pour s'assurer que l'utilisateur saisit un nombre entier valide
-            while (!int.TryParse(Console.ReadLine(), out guess))
+            while (!int.TryParse(Console.ReadLine(), out guess) || guess < min || guess > max)
             {
-                Console.WriteLine("Entrée invalide. Veuillez entrer un nombre entier : ");
-                Console.Write("Veuillez entrer un nombre : ");
+                Console.WriteLine($"Entrée invalide. Le nombre doit être compris entre {min} et {max}.");
+                Console.Write($"Veuillez entrer un nombre entre {min} et {max} : ");
             }
             return guess;
         }
@@ -48,14 +48,18 @@ namespace JeuxNombreM
         // Exécute la logique principale du jeu avec un nombre infini de tentatives
         internal void Start()
         {
+            // Définition des bornes
+            int min = 1;
+            int max = 100;
+            
             // Génération du nombre cible (par exemple, entre 1 et 100)
-            int target = GenerateRandomNumber(1, 100);
+            int target = GenerateRandomNumber(min, max);
             bool found = false;
             // Boucle infinie jusqu'à ce que l'utilisateur trouve le nombre cible
             // (Assure un nombre infini de tentatives)
             while (!found)
             {
-                int guess = GetUserGuess();
+                int guess = GetUserGuess(min, max);
                 found = CheckGuess(guess, target);
             }
             Console.WriteLine("Merci d'avoir joué !");
